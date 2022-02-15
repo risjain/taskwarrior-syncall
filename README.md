@@ -1,4 +1,4 @@
-# taskwarrior-syncall
+# taskwarrior-syncall [Custom calendar syntax to work with reclaim.ai]
 
 <p align="center">
   <img src="https://github.com/bergercookie/taskwarrior-syncall/blob/devel/misc/meme.png"/>
