@@ -2,6 +2,8 @@ import traceback
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
 from uuid import UUID
+from dateutil import parser
+from datetime import datetime, timedelta, timezone
 
 from bubop import logger
 from item_synchronizer.types import Item
@@ -10,6 +12,14 @@ from taskwarrior_syncall.gcal_side import GCalSide
 
 _prefix_title_done_str = "✅"
 
+def diff_isotime_to_today(iso_time):
+    target_time = parser.parse(iso_time) # A datetime object in UTC
+    now_time_utc = datetime.now(timezone.utc)
+
+    delta_t = (target_time - now_time_utc)
+    delta_t_in_minutes = str(int(delta_t.total_seconds()/60)) + 'm'
+
+    return delta_t_in_minutes
 
 def convert_tw_to_gcal(tw_item: Item) -> Item:
     """TW -> GCal Converter.
@@ -23,8 +33,31 @@ def convert_tw_to_gcal(tw_item: Item) -> Item:
 
     gcal_item = {}
 
+    # Added info for Reclaim.ai [title (for 1h in 10d not before in 2d type work)]
+    duration = tw_item['duration_hrs']
+    duration_str = 'for ' + str(int(duration*60)) + 'm' # Convert to minutes
+
+    # Define due date and wait time
+    due_date = ' in ' + diff_isotime_to_today(tw_item['due'])
+
+    if 'wait' in tw_item.keys():
+        wait_until =  ' not before in ' + diff_isotime_to_today(tw_item['wait'])
+    else:
+        wait_until = ''
+
+    # Identify task type
+    if 'work' in tw_item['tags']:
+        task_type = ' type work'
+    elif 'home' in tw_item['tags']:
+        task_type = ' type home'
+    else:
+        task_type = ''
+
+    
+    added_info_for_reclaim = duration_str + due_date + wait_until + task_type
+
     # Summary
-    gcal_item["summary"] = tw_item["description"]
+    gcal_item["summary"] = tw_item["description"] + '(' + added_info_for_reclaim + ') '
     if tw_item["status"] == "completed" and not gcal_item["summary"].startswith(
         _prefix_title_done_str
     ):
