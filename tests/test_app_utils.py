@@ -1,3 +1,4 @@
+import sys
 from unittest.mock import patch
 
 import pytest
@@ -9,6 +10,7 @@ from taskwarrior_syncall import (
     list_named_combinations,
     report_toplevel_exception,
 )
+from taskwarrior_syncall.constants import COMBINATION_FLAGS, ISSUES_URL
 
 
 def test_list_named_combinations(fs, caplog, mock_prefs_manager):
@@ -32,8 +34,8 @@ def test_fetch_app_configuration(fs, caplog, mock_prefs_manager):
     with patch("taskwarrior_syncall.app_utils.PrefsManager", return_value=mock_prefs_manager):
         # invalid combination
         config = fetch_app_configuration(config_fname="doesntmatter", combination="kalimera")
-        config.keys() == ["a", "b", "c"]
-        config.values() == [1, 2, [1, 2, 3]]
+        assert list(config.keys()) == ["a", "b", "c"]
+        assert list(config.values()) == [1, 2, [1, 2, 3]]
         captured = caplog.text
         assert "Loading configuration" in captured
 
@@ -46,15 +48,21 @@ def test_fetch_app_configuration(fs, caplog, mock_prefs_manager):
 
 
 def test_report_toplevel_exception(caplog):
-    report_toplevel_exception()
-    assert "bergercookie/taskwarrior_syncall" in caplog.text
+    report_toplevel_exception(is_verbose=False)
+    assert ISSUES_URL in caplog.text
 
 
 def test_inform_about_combination_name_usage(fs, caplog):
     e = "kalimera"
+    sys.argv[0] = e
     c = "kalinuxta"
-    inform_about_combination_name_usage(exec_name=e, combination_name=c)
-    assert e in caplog.text and c in caplog.text
+    inform_about_combination_name_usage(combination_name=c)
+    assert (
+        e in caplog.text
+        and c in caplog.text
+        and COMBINATION_FLAGS[0] in caplog.text
+        and COMBINATION_FLAGS[1] in caplog.text
+    )
 
 
 def test_cache_or_reuse_cached_combination(fs, caplog, mock_prefs_manager):

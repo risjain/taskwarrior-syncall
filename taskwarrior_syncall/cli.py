@@ -1,21 +1,67 @@
-"""CLI argument functions - reuse across your apps."""
+"""CLI argument functions - reuse across your apps.
+
+This module will be loaded regardless of extras - don't put something here that requires an
+extra dependency.
+"""
 import click
 
-from taskwarrior_syncall.app_utils import name_to_resolution_strategy
-
-# def opt_run_all_combinations(name_A: str, name_B: str):
-#     return click.option(
-#         "--all",
-#         "run_all_combinations",
-#         is_flag=True,
-#         help=f"Execute synchronization for all the known {name_A}<->{name_B} combinations",
-#     )
+from taskwarrior_syncall.app_utils import name_to_resolution_strategy_type
+from taskwarrior_syncall.constants import COMBINATION_FLAGS
 
 
-def opt_list_configs(name_A: str, name_B: str):
+def opt_asana_task_gid(**kwargs):
     return click.option(
-        "--list-configs",
-        "do_list_configs",
+        "-a",
+        "--asana-task-gid",
+        "asana_task_gid",
+        type=str,
+        help="Limit sync to provided task",
+        **kwargs,
+    )
+
+
+def opt_asana_token_pass_path():
+    return click.option(
+        "--token",
+        "--token-pass-path",
+        "token_pass_path",
+        help="Path in the UNIX password manager to fetch",
+    )
+
+
+def opt_asana_workspace_gid():
+    return click.option(
+        "-w",
+        "--asana-workspace-gid",
+        "asana_workspace_gid",
+        type=str,
+        help="Asana workspace GID used to filter tasks",
+    )
+
+
+def opt_asana_workspace_name():
+    return click.option(
+        "-W",
+        "--asana-workspace-name",
+        "asana_workspace_name",
+        type=str,
+        help="Asana workspace name used to filter tasks",
+    )
+
+
+def opt_list_asana_workspaces():
+    return click.option(
+        "--list-asana-workspaces",
+        "do_list_asana_workspaces",
+        is_flag=True,
+        help=f"List the available Asana workspaces",
+    )
+
+
+def opt_list_combinations(name_A: str, name_B: str):
+    return click.option(
+        "--list-combinations",
+        "do_list_combinations",
         is_flag=True,
         help=f"List the available named {name_A}<->{name_B} combinations",
     )
@@ -47,15 +93,15 @@ def opt_resolution_strategy():
         "-r",
         "--resolution_strategy",
         default="AlwaysSecondRS",
-        type=click.Choice(list(name_to_resolution_strategy.keys())),
+        type=click.Choice(list(name_to_resolution_strategy_type.keys())),
         help="Resolution strategy to use during conflicts",
     )
 
 
 def opt_combination(name_A: str, name_B: str):
     return click.option(
-        "-b",
-        "--combination",
+        COMBINATION_FLAGS[0],
+        COMBINATION_FLAGS[1],
         "combination_name",
         type=str,
         help=f"Name of an already saved {name_A}<->{name_B} combination",
@@ -91,7 +137,26 @@ def opt_notion_token_pass_path():
         "--token-pass-path",
         "token_pass_path",
         help="Path in the UNIX password manager to fetch",
-        default="notion.so/dev/integration/taskwarrior/token",
+    )
+
+
+def opt_gkeep_user_pass_path():
+    return click.option(
+        "--user",
+        "--user-pass-path",
+        "gkeep_user_pass_path",
+        help="Path in the UNIX password manager to fetch the Google username from",
+        default="gkeepapi/user",
+    )
+
+
+def opt_gkeep_passwd_pass_path():
+    return click.option(
+        "--passwd",
+        "--passwd-pass-path",
+        "gkeep_passwd_pass_path",
+        help="Path in the UNIX password manager to fetch the Google password from",
+        default="gkeepapi/passwd",
     )
 
 
@@ -104,22 +169,31 @@ def opt_gcal_calendar():
     )
 
 
-def opt_gcal_secret_override():
+def opt_gkeep_note():
     return click.option(
-        "--gcal-secret",
-        default=None,
-        type=click.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True),
+        "-k",
+        "--gkeep-note",
+        type=str,
         help=(
-            "Override the client secret used for the communication with the Google"
-            " Calendar API"
+            "Full title of the Google Keep Note to synchronize - Make sure you enable the"
+            " checkboxes"
         ),
     )
 
 
-def opt_gcal_oauth_port():
+def opt_google_secret_override():
+    return click.option(
+        "--google-secret",
+        default=None,
+        type=click.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True),
+        help="Override the client secret used for the communication with the Google APIs",
+    )
+
+
+def opt_google_oauth_port():
     return click.option(
         "--oauth-port",
         default=8081,
         type=int,
-        help="Port to use for OAuth Authentication with Google Calendar",
+        help="Port to use for OAuth Authentication with Google Applications",
     )

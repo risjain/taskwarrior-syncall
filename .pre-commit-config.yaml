@@ -17,14 +17,29 @@ repos:
       - id: trailing-whitespace
       # - id: check-symlinks
       # - id: pretty-format-json
+      #   args: ["--autofix"]
       # - id: sort-simple-yaml
+  - repo: https://github.com/tcort/markdown-link-check
+    rev: "v3.10.0"
+    hooks:
+      # https://github.com/tcort/markdown-link-check#config-file-format
+      - id: markdown-link-check
+        args: ["--config", ".markdown-link-check.json"]
   - repo: https://github.com/markdownlint/markdownlint
     rev: "v0.11.0"
     hooks:
       - id: markdownlint
-        entry: mdl -r ~MD033,~MD013
+        exclude: ^.github/
+        entry: mdl -r ~MD033,~MD013,~MD034
   - repo: local
     hooks:
+      - id: check-github-workflows
+        name: Validate GitHub Workflows
+        description: 'Validate GitHub Workflows against the schema provided by SchemaStore'
+        entry: check-jsonschema --builtin-schema vendor.github-workflows
+        language: python
+        files: ^\.github/workflows/
+        types: [yaml]
       - id: black
         name: Black formatter
         description: "Black: The uncompromising Python code formatter"
@@ -32,6 +47,12 @@ repos:
         language: system
         minimum_pre_commit_version: 2.9.2
         require_serial: true
+        types_or: [python, pyi]
+      - id: pycln
+        name: Pyclean - Find redundant imports
+        entry: pycln
+        language: system
+        pass_filenames: true
         types_or: [python, pyi]
       # - id: mypy
       #   name: Mypy check

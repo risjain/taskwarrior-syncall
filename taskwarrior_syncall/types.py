@@ -2,7 +2,8 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, TypedDict, Union
 
 from item_synchronizer.types import ID
 
-NotionID = ID
+# ---------------------------------------------------------------------------------------------
+# Taskwarrior
 
 
 class TaskwarriorRawItem(TypedDict, total=False):
@@ -38,6 +39,10 @@ class TaskwarriorRawItem(TypedDict, total=False):
 
 # Item as returned from the Taskw Python API on tw.get_task(id=...)
 TaskwarriorRawTuple = Tuple[Optional[int], TaskwarriorRawItem]
+
+# ---------------------------------------------------------------------------------------------
+# Notion
+NotionID = ID
 
 
 class NotionRawItem(TypedDict):
@@ -177,6 +182,23 @@ class NotionPageContents(TypedDict):
     results: List[NotionRawItem]
     next_cursor: Any
     has_more: bool
+
+
+# ---------------------------------------------------------------------------------------------
+# Asana
+AsanaGID = ID
+
+
+# Task as returned from Asana API.
+class AsanaRawTask(TypedDict):
+    completed: bool
+    completed_at: str
+    created_at: str
+    due_at: str
+    due_on: str
+    gid: AsanaGID
+    name: str
+    modified_at: str
 
 
 # Task as returned from taskw.get_task(id=...)

@@ -1,39 +1,38 @@
-import sys
-from pathlib import Path
 from typing import List
 
 import click
 from bubop import (
     check_optional_mutually_exclusive,
-    check_required_mutually_exclusive,
     format_dict,
     log_to_syslog,
     logger,
     loguru_tqdm_sink,
 )
 
+from taskwarrior_syncall import inform_about_app_extras
+
 try:
     from taskwarrior_syncall import GCalSide
 except ImportError:
-    logger.error(f"You have to install the [gcal] extra for {sys.argv[0]} to work. Exiting.")
-    sys.exit(1)
+    inform_about_app_extras(["google"])
 
 from taskwarrior_syncall import (
     Aggregator,
     TaskWarriorSide,
+    __version__,
     cache_or_reuse_cached_combination,
     convert_gcal_to_tw,
     convert_tw_to_gcal,
     fetch_app_configuration,
+    get_resolution_strategy,
     inform_about_combination_name_usage,
     list_named_combinations,
-    name_to_resolution_strategy,
     opt_combination,
     opt_custom_combination_savename,
     opt_gcal_calendar,
-    opt_gcal_oauth_port,
-    opt_gcal_secret_override,
-    opt_list_configs,
+    opt_google_oauth_port,
+    opt_google_secret_override,
+    opt_list_combinations,
     opt_resolution_strategy,
     opt_tw_project,
     opt_tw_tags,
@@ -44,21 +43,21 @@ from taskwarrior_syncall import (
 @click.command()
 # google calendar options ---------------------------------------------------------------------
 @opt_gcal_calendar()
-@opt_gcal_secret_override()
-@opt_gcal_oauth_port()
+@opt_google_secret_override()
+@opt_google_oauth_port()
 # taskwarrior options -------------------------------------------------------------------------
 @opt_tw_tags()
 @opt_tw_project()
 # misc options --------------------------------------------------------------------------------
-@opt_list_configs("TW", "Google Calendar")
+@opt_list_combinations("TW", "Google Calendar")
 @opt_resolution_strategy()
 @opt_combination("TW", "Google Calendar")
-@opt_list_configs("TW", "Google Calendar")
 @opt_custom_combination_savename("TW", "Google Calendar")
 @click.option("-v", "--verbose", count=True)
+@click.version_option(__version__)
 def main(
     gcal_calendar: str,
-    gcal_secret: str,
+    google_secret: str,
     oauth_port: int,
     tw_tags: List[str],
     tw_project: str,
@@ -66,7 +65,7 @@ def main(
     verbose: int,
     combination_name: str,
     custom_combination_savename: str,
-    do_list_configs: bool,
+    do_list_combinations: bool,
 ):
     """Synchronize calendars from your Google Calendar with filters from Taskwarrior.
 
@@ -78,14 +77,13 @@ def main(
     log_to_syslog(name="tw_gcal_sync")
     logger.debug("Initialising...")
     inform_about_config = False
-    exec_name = Path(sys.argv[0]).stem
 
-    if do_list_configs:
+    if do_list_combinations:
         list_named_combinations(config_fname="tw_gcal_configs")
         return 0
 
     # cli validation --------------------------------------------------------------------------
-    check_required_mutually_exclusive(combination_name, custom_combination_savename)
+    check_optional_mutually_exclusive(combination_name, custom_combination_savename)
     combination_of_tw_project_tags_and_gcal_calendar = any(
         [
             tw_project,
@@ -144,7 +142,7 @@ def main(
     tw_side = TaskWarriorSide(tags=tw_tags, project=tw_project)
 
     gcal_side = GCalSide(
-        calendar_summary=gcal_calendar, oauth_port=oauth_port, client_secret=gcal_secret
+        calendar_summary=gcal_calendar, oauth_port=oauth_port, client_secret=google_secret
     )
 
     # sync ------------------------------------------------------------------------------------
@@ -154,7 +152,9 @@ def main(
             side_B=tw_side,
             converter_B_to_A=convert_tw_to_gcal,
             converter_A_to_B=convert_gcal_to_tw,
-            resolution_strategy=name_to_resolution_strategy[resolution_strategy],
+            resolution_strategy=get_resolution_strategy(
+                resolution_strategy, side_A_type=type(gcal_side), side_B_type=type(tw_side)
+            ),
             config_fname=combination_name,
             ignore_keys=(
                 (),
@@ -166,11 +166,11 @@ def main(
         logger.error("Exiting...")
         return 1
     except:
-        report_toplevel_exception()
+        report_toplevel_exception(is_verbose=verbose >= 1)
         return 1
 
     if inform_about_config:
-        inform_about_combination_name_usage(exec_name, combination_name)
+        inform_about_combination_name_usage(combination_name)
 
     return 0
 

@@ -6,6 +6,7 @@ from _pytest.logging import caplog as _caplog  # type: ignore
 from bubop import PrefsManager
 from loguru import logger
 
+from .conftest_gkeep import *
 from .conftest_notion import *
 from .conftest_tw import *
 
@@ -22,11 +23,11 @@ def caplog(_caplog):
     as usual
     """
 
-    class PropogateHandler(logging.Handler):
+    class PropagateHandler(logging.Handler):
         def emit(self, record):
             logging.getLogger(record.name).handle(record)
 
-    logger.add(PropogateHandler(), format="{message}")
+    logger.add(PropagateHandler(), format="{message}")
     yield _caplog
 
 

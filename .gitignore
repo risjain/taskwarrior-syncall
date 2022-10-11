@@ -74,7 +74,9 @@ compile_commands.json
 *.bak
 s1.py
 
-quickstart.py
+/quickstart*
 src
 .vim
 a.py
+test-tw-gcal-sync.json
+/notion_config.toml
